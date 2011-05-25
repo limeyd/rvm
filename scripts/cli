@@ -20,7 +20,10 @@ __rvm_parse_args()
   #       Otherwise this file gets big rather fast.
   #echo "$@" >> $HOME/.rvm_history
 
-  if echo "$@" | \grep -q 'trace' ; then echo "$@" ; __rvm_version ; fi
+  if echo "$@" | \grep 'trace'  >/dev/null 2>&1 ; then
+    echo "$@"
+    __rvm_version
+  fi
 
   rvm_action="${rvm_action:-""}"
 
@@ -163,7 +166,7 @@ __rvm_parse_args()
                   rvm_action="error"
                   rvm_error_message="'rvm $rvm_action' must be followed by arguments."
                 elif [[ "ruby" = "${rvm_action:-""}" ]] ; then
-                  if echo "${rvm_ruby_strings:-""}" | \grep -q ',' ; then
+                  if echo "${rvm_ruby_strings:-""}" | \grep ','  >/dev/null 2>&1; then
                     rvm_action="ruby"
                     rvm_ruby_args=""
                   else
@@ -286,13 +289,24 @@ __rvm_parse_args()
           wrapper)
             rvm_action="$rvm_token"
             rvm_ruby_string="$next_token" ;
-            if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+            if (( $# > 0 ))
+            then
+              next_token="$1"
+              shift
+            else
+              next_token=""
+            fi
             rvm_wrapper_name="$next_token"
-            if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+            if (( $# > 0 ))
+            then
+              next_token="$1"
+              shift
+            else
+              next_token=""
+            fi
             rvm_ruby_args="$next_token $@" # list of binaries, or none
             rvm_parse_break=1
             ;;
-
 
           rtfm|RTFM)
             rvm_action="rtfm"
@@ -669,24 +683,15 @@ __rvm_parse_args()
           --trace|--debug)
             local option
 
-            set -o noclobber
-            set -o nounset
-
-            if [[ -z "${ZSH_VERSION:-""}" ]] ; then
-              set -o errtrace
-            fi
+            [[ -n "${ZSH_VERSION:-""}" ]] || set -o errtrace
 
             # errexit pipefail
-            if [[ "$rvm_token" = "--trace" ]] ; then
-
+            if [[ "$rvm_token" = "--trace" ]]
+            then
               export rvm_trace_flag=1
-
               set -o xtrace
-
-              if [[ -z "${ZSH_VERSION:-""}" ]] ; then
+              [[ -n "${ZSH_VERSION:-""}" ]] ||
                 export PS4="+ \${BASH_SOURCE##\${rvm_path:-}} : \${FUNCNAME[0]:+\${FUNCNAME[0]}()}  \${LINENO} > "
-
-              fi
             fi
             ;;
 
@@ -736,6 +741,8 @@ rvm()
   __rvm_cleanse_variables
 
   __rvm_load_rvmrc
+
+  __rvm_setup
 
   __rvm_initialize
 
@@ -794,7 +801,7 @@ rvm()
       __rvm_inspect
       ;;
     update)
-      printf "ERROR: rvm update has been removed. See 'rvm get' and rvm 'rubygems' CLI API instead"
+      printf "ERROR: rvm update has been removed. See 'rvm get' and rvm 'rubygems' CLI API instead\n"
       ;;
     reset)
       source "$rvm_scripts_path/functions/reset"
@@ -808,12 +815,39 @@ rvm()
       source "$rvm_scripts_path/functions/implode"
       __rvm_implode
       ;;
+    get)
+      if (( $# > 0 ))
+      then
+        next_token="$1"
+        shift
+      else
+        next_token=""
+      fi
 
-    help|rtfm|env|current|info|list|gemdir|gemhome|gempath|monitor|notes|get|package)
+      if [[ "$next_token" = "${rvm_action}" ]]
+      then
+        shift
+      fi
+      \cp -f "$rvm_scripts_path/get" /tmp/$$
+      "/tmp/$$" $rvm_ruby_args
+      \rm -f /tmp/$$
+      ;;
 
-      if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
-      if [[ "$next_token" = "${rvm_action}" ]]; then shift; fi
-      "$rvm_scripts_path/${rvm_action}" $rvm_ruby_args
+    help|rtfm|env|current|info|list|gemdir|gemhome|gempath|monitor|notes|package)
+
+      if (( $# > 0 ))
+      then
+        next_token="$1"
+        shift
+      else
+        next_token=""
+      fi
+
+      if [[ "$next_token" = "${rvm_action}" ]]
+      then
+        shift
+      fi
+      "$rvm_scripts_path/${rvm_action}" ${rvm_ruby_args:-}
       ;;
 
     cleanup|tools|snapshot|disk-usage|repair|alias|docs|rubygems|migrate|upgrade)
@@ -931,16 +965,13 @@ rvm()
 
   fi
 
-  if [[ ${rvm_trace_flag:-0} -eq 1 ]] ; then
+  if (( ${rvm_trace_flag:-0} == 1 ))
+  then
     rvm_trace_flag=0
     set +o verbose
-    set +o noclobber
-    set +o nounset
     set +o xtrace
 
-    if [[ -z "${ZSH_VERSION:-""}" ]] ; then
-      set +o errtrace
-    fi
+    [[ -n "${ZSH_VERSION:-""}" ]] || set +o errtrace
   fi
 
   __rvm_teardown

@@ -1,21 +1,31 @@
 #!/usr/bin/env bash
 
-rvm_load_rvm=0 ; source "scripts/rvm"
+shopt -s extglob
+PS4="+ \${BASH_SOURCE##\${rvm_path:-}} : \${FUNCNAME[0]:+\${FUNCNAME[0]}()}  \${LINENO} > "
+export PS4
+set -o errtrace
 
-source "scripts/functions/installer"
+# Tracing, if asked for.
+if [[ "$*" =~ --trace ]] || (( ${rvm_trace_flag:-0} > 0 ))
+then
+  set -o xtrace
+  export rvm_trace_flag=1
+fi
+
+source "$PWD/scripts/functions/installer"
+# source "$PWD/scripts/rvm"
 
 #
 # RVM Installer
 #
-
-determine_install_path
-determine_install_or_upgrade
 install_setup
 
+true ${DESTDIR:=}
 # Parse RVM Installer CLI arguments.
-while [[ $# -gt 0 ]] ; do
-
-  token="$1" ; shift
+while (( $# > 0 ))
+do
+  token="$1"
+  shift
 
   case "$token" in
     --auto)
@@ -57,6 +67,23 @@ while [[ $# -gt 0 ]] ; do
       ;;
   esac
 done
+
+if [[ -n "${DESTDIR}" ]]
+then
+  rvm_prefix="${DESTDIR}"
+fi
+
+determine_install_path
+
+determine_install_or_upgrade
+
+if [[ -z "${rvm_path:-}" ]]
+then
+  echo "ERROR: rvm_path is empty, halting installation."
+  exit 1
+fi
+
+export rvm_prefix rvm_path rvm_debug_flag rvm_trace_flag
 
 create_install_paths
 

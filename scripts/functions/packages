@@ -20,7 +20,7 @@ install_package()
           || (result=$? && return $result)
 
         __rvm_run "$package/extract" \
-          "tar zxf $rvm_archives_path/$package-$version.$archive_format -C $rvm_src_path" \
+          "tar zxf $rvm_archives_path/$package-$version.$archive_format -C $rvm_src_path" --no-same-owner \
           "Extracting $package-$version.$archive_format to $rvm_src_path"
         ;;
 
@@ -31,7 +31,7 @@ install_package()
           || (result=$? && return $result)
 
         __rvm_run "$package/extract" \
-          "tar jxf $rvm_archives_path/$package-$version.$archive_format -C $rvm_src_path" \
+          "tar jxf $rvm_archives_path/$package-$version.$archive_format -C $rvm_src_path" --no-same-owner \
           "Extracting $package-$version.$archive_format to $rvm_src_path"
 
         ;;
@@ -217,7 +217,8 @@ libxml2()
 libyaml()
 {
   package="yaml" ; version="0.1.3" ; archive_format="tar.gz"
-  if [[ "Darwin" = "$(uname)" ]]; then
+  if [[ "Darwin" = "$(uname)" ]]
+  then
     unset rvm_configure_env
   fi
   install_package

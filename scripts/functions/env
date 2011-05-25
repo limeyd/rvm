@@ -4,6 +4,11 @@
 # Environment manipulation functions.
 #
 
+__rvm_default_flags()
+{
+  true ${rvm_head_flag:=0} ${rvm_clang_flag:=0} ${rvm_delete_flag:=0}
+}
+
 __rvm_nuke_rvm_variables()
 {
   unset rvm_head_flag $(env | awk -F= '/^rvm_/{print $1" "}')
@@ -13,7 +18,7 @@ __rvm_nuke_rvm_variables()
 __rvm_unset_ruby_variables()
 {
   # unset rvm_ruby_flag $(env | awk -F= '/^rvm_ruby_/{printf $1" "}')
-  unset rvm_ruby_string rvm_ruby_strings rvm_ruby_binary rvm_ruby_gem_home rvm_ruby_gem_path rvm_ruby_home rvm_ruby_interpreter rvm_ruby_irbrc rvm_ruby_log_path rvm_ruby_major_version rvm_ruby_minor_version rvm_ruby_package_name rvm_ruby_patch_level rvm_ruby_release_version rvm_ruby_repo_url rvm_ruby_repo_branch rvm_ruby_revision rvm_ruby_selected_flag rvm_ruby_tag rvm_ruby_version rvm_ruby_load_path rvm_ruby_require rvm_head_flag rvm_ruby_package_file rvm_ruby_configure rvm_ruby_name rvm_ruby_url rvm_ruby_global_gems_path rvm_ruby_args rvm_ruby_name
+  unset rvm_ruby_string rvm_ruby_strings rvm_ruby_binary rvm_ruby_gem_home rvm_ruby_gem_path rvm_ruby_home rvm_ruby_interpreter rvm_ruby_irbrc rvm_ruby_log_path rvm_ruby_major_version rvm_ruby_minor_version rvm_ruby_package_name rvm_ruby_patch_level rvm_ruby_release_version rvm_ruby_repo_url rvm_ruby_repo_branch rvm_ruby_revision rvm_ruby_selected_flag rvm_ruby_tag rvm_ruby_version rvm_ruby_load_path rvm_ruby_require rvm_head_flag rvm_ruby_package_file rvm_ruby_configure rvm_ruby_name rvm_ruby_url rvm_ruby_global_gems_path rvm_ruby_args rvm_ruby_name rvm_llvm_flag
 }
 
 
@@ -38,8 +43,8 @@ __rvm_cleanse_variables()
 # Add bin path if not present
 __rvm_conditionally_add_bin_path()
 {
-  if printf "${PATH//:/ }" | \grep -vqF "${rvm_bin_path} " ; then
-
+  if printf "${PATH//:/ }" | \grep -vF "${rvm_bin_path} " >/dev/null 2>&1
+  then
     case "${rvm_ruby_string:-"system"}" in
       system)
         PATH="$PATH:${rvm_bin_path}"

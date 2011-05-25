@@ -192,6 +192,8 @@ r() {
 
   args="$@"
 
+  shopt -s extglob
+
   case "$action" in
 
     c|console)
