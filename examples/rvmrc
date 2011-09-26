@@ -42,12 +42,20 @@
 # Install rubies when used if are not installed.
 #export rvm_install_on_use_flag=1
 
-# Gemset Creat on use Flag
+# Gemset Create on use Flag
 # This will create a gemset when the gemset is used if it does not exist
 # export rvm_gemset_create_on_use_flag=1
 
 # Make Flags, I have 8 cpu's so I might use 7 make threads:
 #export rvm_make_flags="-j7"
+
+# Source a .rvmrc file in a directory after changing to it, if it exists.
+# To disable this fature, set in root/home .rvmrc file:
+#
+# export rvm_project_rvmrc=0
+#
+# Or don't even bother sourcing rvm, it *is* optional. Always has been, you can
+# instead add $rvm_path/bin to your PATH and use --default to switch...
 
 # Automatically trust project .rvmrc files
 #  export rvm_trust_rvmrcs_flag=1
@@ -60,5 +68,5 @@
 # Specify RBXOPT enviroment settings that should always be set when calling
 # Rubinius scripts. For example, to always run the agent when running from
 # an Rubinius environment, set the value to '-Xagent'
-# export rvm_rbx_opts
+# export rvm_rbx_opt
 

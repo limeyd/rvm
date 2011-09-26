@@ -89,8 +89,8 @@ symlink_binary()
   # we then symlink it into place.
   if wrap_binary && [[ -f "$file_name" ]]
   then
-    rm -f "$rvm_bin_path/${prefix}_${binary_name}"
-    ln -fs "$file_name" "$rvm_bin_path/${prefix}_${binary_name}"
+    rm -f "$rvm_bin_path/${prefix}_${binary_name##*\/}"
+    ln -fs "$file_name" "$rvm_bin_path/${prefix}_${binary_name##*\/}"
   fi
 }
 
@@ -141,7 +141,7 @@ __rvm_become "$ruby_string"
 
 __rvm_ensure_has_environment_files
 
-environment_identifier="$(__rvm_environment_identifier)"
+environment_identifier="$(__rvm_env_string)"
 
 # For each binary, we want to generate the wrapper / symlink
 # it to the existing wrapper if needed.

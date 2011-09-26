@@ -46,13 +46,16 @@ alias_conflicts_with_ruby() {
 alias_show() {
   local expanded_alias_name
 
-  if [[ -z "$alias_name" ]]; then
+  if [[ -z "$alias_name" ]]
+  then
     rvm_log "usage: 'rvm alias show [alias_name]'"
     result=1
     return
   fi
 
-  expanded_alias_name="$("$rvm_scripts_path"/db "$rvm_config_path/alias" "$alias_name")"
+  [[ -s "$rvm_path/config/alias" ]] || return 0
+
+  expanded_alias_name="$("$rvm_scripts_path"/db "$rvm_path/config/alias" "$alias_name")"
 
   if [[ -z "$expanded_alias_name" ]]; then
     rvm_error "Unknown alias name: '$alias_name'"
@@ -74,7 +77,9 @@ alias_delete() {
     if [[ -L "$link" ]] ; then rm -f $link ; fi
   done
 
-  "$rvm_scripts_path"/db "$rvm_config_path/alias" "$alias_name" "delete"
+  [[ -s "$rvm_path/config/alias" ]] || return 0
+
+  "$rvm_scripts_path"/db "$rvm_path/config/alias" "$alias_name" "delete"
 }
 
 alias_create() {
@@ -126,7 +131,7 @@ alias_create() {
         return $result
       fi
 
-      final_environment_identifier="${rvm_environment_identifier:-$(__rvm_environment_identifier)}"
+      final_environment_identifier="${rvm_environment_identifier:-$(__rvm_env_string)}"
 
       rvm_log "Creating alias $alias_name for $final_environment_identifier."
 
@@ -134,7 +139,7 @@ alias_create() {
 
       rvm_log "Recording alias $alias_name for $final_environment_identifier."
 
-      "$rvm_scripts_path"/db "$rvm_config_path/alias" "$alias_name" "$final_environment_identifier"
+      "$rvm_scripts_path"/db "$rvm_path/config/alias" "$alias_name" "$final_environment_identifier"
 
     else
 
@@ -156,17 +161,14 @@ alias_create() {
 }
 
 alias_list() {
-
   local item items
 
   items=($(cd "$rvm_rubies_path" ; find . -maxdepth 1 -mindepth 1 -type l | sed -e 's#./##'))
 
-  for item in "${items[@]}" ; do
-
-    echo "$(basename "$item") => $("$rvm_scripts_path"/db "$rvm_config_path/alias" "$(basename "$item")")"
-
+  for item in "${items[@]}"
+  do
+    echo "$(basename "$item") => $("$rvm_scripts_path"/db "$rvm_path/config/alias" "$(basename "$item")")"
   done
-
 }
 
 args=($*)
@@ -176,7 +178,7 @@ rvm_environment_identifier="${args[2]:-""}"
 args="$(echo ${args[@]:3}) " # Strip trailing / leading / extra spacing.
 result=0
 
-if [[ ! -f "$rvm_config_path/alias" ]] ; then touch "$rvm_config_path/alias" ; fi
+if [[ ! -f "$rvm_path/config/alias" ]] ; then touch "$rvm_path/config/alias" ; fi
 
 if printf "$alias_name" | grep "${rvm_gemset_separator:-"@"}" >/dev/null 2>&1 ; then
   gemset_name="${alias_name/*${rvm_gemset_separator:-"@"}/}"
@@ -186,7 +188,7 @@ else
 fi
 
 if [[ -n "$alias_name" ]] ; then
-  rvm_alias="$("$rvm_scripts_path/db" "$rvm_config_path/alias" "$alias_name")"
+  rvm_alias="$("$rvm_scripts_path/db" "$rvm_path/config/alias" "$alias_name")"
 fi
 
 case "$action" in

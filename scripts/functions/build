@@ -2,10 +2,15 @@
 
 __rvm_setup_compile_environment()
 {
+  if [[ "$OSTYPE" == darwin* ]] && [[ -x /usr/bin/gcc-4.2 ]]
+  then
+    export CC="/usr/bin/gcc-4.2"
+  fi
+
   if [[ "Darwin" = "$(uname)" ]]
   then
     rvm_configure_env=()
-    local architectures="${rvm_architectures:-"-arch i386 -arch x86_64"}"
+    local architectures="${rvm_architectures:-"-arch x86_64"}"
     rvm_configure_env+=(
     "MACOSX_DEPLOYMENT_TARGET=$(sw_vers -productVersion |
     awk -F'.' '{print $1"."$2}')"
@@ -15,7 +20,7 @@ __rvm_setup_compile_environment()
     rvm_configure_env+=("CXXFLAGS='$architectures -g -Os -pipe'")
     rvm_configure_env+=("LDFLAGS='$architectures -bind_at_load'")
     rvm_configure_env+=(
-    "LDSHARED='$architectures cc -dynamiclib -undefined suppress -flat_namespace'"
+    "LDSHARED='cc $architectures -dynamiclib -undefined suppress -flat_namespace'"
     )
   fi
   rvm_configure_env="${rvm_configure_env[*]}"
@@ -99,38 +104,40 @@ __rvm_mono_env()
   return 0
 }
 
-# Returns the first 1.8.7-compatible (partly) ruby for use
+# Returns all mri compatible (partly) ruby for use
 # with things like rbx etc which require a ruby be installed.
-__rvm_18_compat_ruby()
+__rvm_mri_rubies()
 {
-  local rubies ruby_name list=()
-
-  rubies=($(
-  cd "$rvm_rubies_path"
-  find . -maxdepth 1 -mindepth 1 -type d
-  ))
-
-  for ruby_name in "${rubies[@]//.\/}"
+  local versions="${1:-"1.8.|ree|1.9."}" _ruby
+  for _ruby in $( find $rvm_rubies_path/ -maxdepth 1 -mindepth 1 -type d -not -type l )
   do
-    if [[ ! -L "$rvm_rubies_path/$ruby_name" ]]
-    then
-      case $ruby_name in
-        *1.8.*|ree*)
-          list+=("$ruby_name")
-          ;;
-      esac
-    fi
-  done
+    printf "${_ruby##*/}\n"
+  done | grep -E "$versions"
+}
 
-  echo "${list[*]}" | tr ' ' '\n' | sort | tail -n1
-
+# Returns the first mri compatible (partly) ruby for use
+# with things like rbx etc which require a ruby be installed.
+__rvm_mri_ruby()
+{
+  local versions="${1:-"1.8.|ree|1.9."}"
+  _mri_rubies=( $( __rvm_mri_rubies "$versions" ) )
+  _current_ruby=$(__rvm_env_string)
+  if [[ " ${_mri_rubies[*]} " =~ " ${_current_ruby} " ]]
+  then
+    printf "${_current_ruby}\n"
+  else
+    for _ruby in ${_mri_rubies[@]}
+    do
+      printf "${_ruby}\n"
+    done | sort | head -n 1
+  fi
   return 0
 }
 
-
-__rvm_ensure_has_18_compat_ruby()
+__rvm_ensure_has_mri_ruby()
 {
-  if [[ -z "$(__rvm_18_compat_ruby)" ]]
+  local versions="${1:-"1.8.|ree|1.9."}"
+  if [[ -z "$(__rvm_mri_ruby $versions)" ]]
   then
     local compat_result=0
     if ! ( "$rvm_bin_path"/rvm install 1.8.7 )

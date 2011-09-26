@@ -12,7 +12,7 @@ fi
 
 usage()
 {
-  cat -v "${rvm_help_path}/gemsets"
+  cat -v "${rvm_help_path}/gemset"
 }
 
 gemset_list_all()
@@ -145,6 +145,12 @@ gemset_create()
   gemsets=(${args[@]})
   for gemset in "${gemsets[@]}"
   do
+    if [[ "$(__rvm_env_string)" == "system" ]]
+    then
+      rvm_error "Can not create gemset before using a ruby.  Try 'rvm use <some ruby>'."
+      return 1
+    fi
+
     if [[ "$gemset" == *"${rvm_gemset_separator:-"@"}"* ]]
     then
       rvm_error "Can not create gemset '$gemset', it contains a \"${rvm_gemset_separator:-"@"}\"."
@@ -186,7 +192,10 @@ gemset_list()
     __rvm_select
   fi
 
-  rvm_log "\ngemsets for $rvm_ruby_string (found in ${rvm_gems_path:-"$rvm_path/gems"}/$rvm_ruby_string)"
+  if [[ "${args[0]:-""}" != "strings" ]]
+  then
+    rvm_log "\ngemsets for $rvm_ruby_string (found in ${rvm_gems_path:-"$rvm_path/gems"}/$rvm_ruby_string)"
+  fi
 
   if [[ -d "${rvm_gems_path:-"$rvm_path/gems"}" ]]
   then
@@ -200,9 +209,19 @@ gemset_list()
         gemset="${gemset##*${rvm_gemset_separator:-@}}"
         if [[ "${gemset}" = "${current_gemset}" ]]
         then
-          echo "=> ${gemset}"
+		    if [[ "${args[0]:-""}" != "strings" ]]
+			  then
+             echo "=> ${gemset}"
+          else
+		       echo "${gemset} (default)"
+			 fi
         else
-          echo "   ${gemset}"
+	       if [[ "${args[0]:-""}" != "strings" ]]
+			  then
+             echo "   ${gemset}"
+			  else
+				echo $gemset
+			  fi
         fi
       done
     else
@@ -259,7 +278,7 @@ gemset_delete()
       rvm_log "$gemdir already does not exist."
     fi
   else
-    rvm_error "A gemset name must be specified in order to delete a gems."
+    rvm_error "A gemset name must be specified in order to delete a gemset."
     return 1
   fi
   return 0
@@ -285,7 +304,7 @@ gemset_empty()
 
   elif [[ -d "$gemdir" ]]
   then
-    rvm_warn "Are you SURE you wish to remove the installed gemset for gemset '$(basename "$gemdir")' ($gemdir)?"
+    rvm_warn "Are you SURE you wish to remove the installed gems for gemset '$(basename "$gemdir")' ($gemdir)?"
 
     echo -n "(anything other than 'yes' will cancel) > "
     read response
@@ -505,7 +524,7 @@ gemset_export()
   echo "# $rvm_file_name generated gem export file. Note that any env variable settings will be missing. Append these after using a ';' field separator" \
     > "$rvm_file_name"
 
-  gems=($(gem list | sed 's#[\(|\)]##g' | sed 's#, #,#g' | tr ' ' ';'))
+  gems=($(gem list --local | sed 's#[\(|\)]##g' | sed 's#, #,#g' | tr ' ' ';'))
 
   for gem in "${gems[@]}"
   do
@@ -853,7 +872,7 @@ gemset_initial()
 
   true ${rvm_gemsets_path:="$rvm_path/gemsets"}
 
-  rvm_log "Importing initial gemsets for $(__rvm_environment_identifier)."
+  rvm_log "Importing initial gemsets for $(__rvm_env_string)."
 
   if [[ ! -d "$rvm_gemsets_path/${rvm_ruby_string//-//}" ]]
   then
@@ -888,7 +907,7 @@ gemset_initial()
       fi
     fi
   done
-  rvm_log "Installation of gems for $(__rvm_environment_identifier) is complete."
+  rvm_log "Installation of gems for $(__rvm_env_string) is complete."
   return 0
 }
 
@@ -965,7 +984,7 @@ case "$action" in
     then
       gemset_import
     else
-      original_env="$(__rvm_environment_identifier)"
+      original_env="$(__rvm_env_string)"
       for rvm_ruby_string in $(echo "$rvm_ruby_strings" | tr "," " ")
       do
         __rvm_become

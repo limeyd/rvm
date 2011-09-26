@@ -54,13 +54,13 @@
 # RVM::Environment.new, versus RVM.environment
 #
 module RVM
-  VERSION = "1.6.16"
+  VERSION = "1.8.4"
 
   require "rvm/errors"
 
-  autoload :Shell,       "rvm/shell"
-  autoload :Environment, "rvm/environment"
-  autoload :Version,     "rvm/version"
+  require "rvm/shell"
+  require "rvm/environment"
+  require "rvm/version"
 
   class << self
 

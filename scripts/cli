@@ -15,12 +15,14 @@ __rvm_run_script()
 
 __rvm_parse_args()
 {
+  local _string
   # TODO:
   #       Make this more robust '__rvm_history' so that it stores *unique* rvm commands.
   #       Otherwise this file gets big rather fast.
   #echo "$@" >> $HOME/.rvm_history
 
-  if echo "$@" | \grep 'trace'  >/dev/null 2>&1 ; then
+  if echo "$@" | \grep 'trace'  >/dev/null 2>&1
+  then
     echo "$@"
     __rvm_version
   fi
@@ -31,11 +33,17 @@ __rvm_parse_args()
 
   rvm_parse_break=0
 
-  while [[ -n "$next_token" ]] ; do
-
+  while [[ -n "$next_token" ]]
+  do
     rvm_token="$next_token"
 
-    if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+    if (( $# > 0 ))
+    then
+      next_token="$1"
+      shift
+    else
+      next_token=""
+    fi
 
     case "$rvm_token" in
 
@@ -45,15 +53,23 @@ __rvm_parse_args()
           use)
             rvm_action="$rvm_token"
             rvm_verbose_flag=1
-            if [[ "ruby" = "$next_token" ]] ; then
-              if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+            if [[ "ruby" = "$next_token" ]]
+            then
+              if (( $# > 0 ))
+              then
+                next_token="$1"
+                shift
+              else
+                next_token=""
+              fi
             fi
             ;;
 
-          install|uninstall)
+          install|uninstall|reinstall)
             export ${rvm_token}_flag=1
             rvm_action=$rvm_token
-            export rvm_install_arguments="$(__rvm_quote_args_with_shift 1 "$@")"
+            _string="$*"
+            export rvm_install_args="${_string//*-- /}"
             ;;
 
           gemset)
@@ -61,18 +77,27 @@ __rvm_parse_args()
 
             rvm_ruby_gem_home="${GEM_HOME:-""}"
 
-            if [[ -z "$next_token" ]] ; then
+            if [[ -z "$next_token" ]]
+            then
               rvm_ruby_args="help"
 
-            elif [[ "clear" = "$next_token" ]] ; then
+            elif [[ "clear" = "$next_token" ]]
+            then
               __rvm_gemset_clear
               rvm_ruby_args="clear"
 
-            elif [[ "use" = "$next_token" ]] ; then
+            elif [[ "use" = "$next_token" ]]
+            then
               rvm_use_flag=1
               rvm_ruby_args="$next_token $@"
               rvm_gemset_name="$next_token"
-              if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+              if (( $# > 0 ))
+              then
+                next_token="$1"
+                shift
+              else
+                next_token=""
+              fi
 
               if [[ -n "$next_token" ]] ; then rvm_gemset_name="$next_token" ; else rvm_gemset_name="" ; fi
 
@@ -89,7 +114,8 @@ __rvm_parse_args()
                   ;;
               esac
 
-            elif [[ "delete" = "$next_token" ]] ; then
+            elif [[ "delete" = "$next_token" ]]
+            then
               rvm_delete_flag=1
               rvm_ruby_args="$next_token $@"
 
@@ -125,21 +151,25 @@ __rvm_parse_args()
             rvm_action="gemset"
             rvm_gemdir_flag=1
 
-            if [[ "system" = "$next_token" ]] ; then
+            if [[ "system" = "$next_token" ]]
+            then
               rvm_system_flag=1
               if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
             fi
 
-            if [[ "user" = "$next_token" ]] ; then
+            if [[ "user" = "$next_token" ]]
+            then
               rvm_user_flag=1
               if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
             fi
             ;;
 
-          package)
+          pkg)
             rvm_action="$rvm_token"
-            if [[ "$next_token" = "--only-path" ]]; then
-              shift; rvm_only_path_flag=1
+            if [[ "$next_token" = "--only-path" ]]
+            then
+              shift
+              rvm_only_path_flag=1
             fi
             rvm_ruby_args="$next_token $*"
             rvm_parse_break=1
@@ -160,13 +190,16 @@ __rvm_parse_args()
 
             if [[ "rake" = "${rvm_action:-""}" || "gem" = "${rvm_action:-""}" || "ruby" = "${rvm_action:-""}" ]] ; then
 
-              if [[ -z "$next_token" ]] ; then
-
-                if [[ "gem" = "${rvm_action:-""}" ]]  ; then
+              if [[ -z "$next_token" ]]
+              then
+                if [[ "gem" = "${rvm_action:-""}" ]]
+                then
                   rvm_action="error"
                   rvm_error_message="'rvm $rvm_action' must be followed by arguments."
-                elif [[ "ruby" = "${rvm_action:-""}" ]] ; then
-                  if echo "${rvm_ruby_strings:-""}" | \grep ','  >/dev/null 2>&1; then
+                elif [[ "ruby" = "${rvm_action:-""}" ]]
+                then
+                  if echo "${rvm_ruby_strings:-""}" | \grep ','  >/dev/null 2>&1
+                  then
                     rvm_action="ruby"
                     rvm_ruby_args=""
                   else
@@ -174,38 +207,50 @@ __rvm_parse_args()
                     rvm_error_message="rvm X,Y,Z '$rvm_action' must be followed by arguments."
                   fi
                 fi
-
-              elif [[ "-S" = "$next_token" ]]  ; then
+              elif [[ "-S" = "$next_token" ]]
+              then
                 rvm_action="ruby"
                 rvm_ruby_args="${flag:-""} $next_token $(__rvm_quote_args "$@")"
                 rvm_parse_break=1
-
-              elif [[ "-e" = "$next_token" ]] ; then
+              elif [[ "-e" = "$next_token" ]]
+              then
                 rvm_action="ruby"
                 IFS="\n" ; rvm_ruby_args="${flag:-""} $next_token '$@'" ; IFS=" "
                 rvm_parse_break=1
-
               else
                 rvm_ruby_args="$next_token $@"
                 rvm_parse_break=1
               fi
             else
-              if match "$next_token" "-*" ; then
+              if match "$next_token" "-*"
+              then
                 unset rvm_ruby_strings
 
               else
-                if match "$next_token" "[0-9]*" ; then
+                if match "$next_token" "[0-9]*"
+                then
                   rvm_ruby_strings="${1//,/ }"
-                  if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+                  if (( $# > 0 ))
+                  then
+                    next_token="$1"
+                    shift
+                  else
+                    next_token=""
+                  fi
                   unset rvm_ruby_interpreter
 
                 else
                   case "$next_token" in
-
                     ruby|rbx|jruby|macruby|ree|kiji|rubinius|maglev|goruby|ironruby)
                       rvm_ruby_strings=$next_token
                       rvm_ruby_interpreter=$next_token
-                      if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
+                      if (( $# > 0 ))
+                      then
+                        next_token="$1"
+                        shift
+                      else
+                        next_token=""
+                      fi
                       ;;
 
                     *)
@@ -280,6 +325,12 @@ __rvm_parse_args()
             fi
             ;;
 
+          group)
+            rvm_action="group"
+            rvm_ruby_args="$next_token $@"
+            rvm_parse_break=1
+            ;;
+
           help|usage)
             rvm_action="help"
             rvm_ruby_args="$next_token $@"
@@ -317,13 +368,12 @@ __rvm_parse_args()
             $rvm_action="reboot"
             ;;
           *)
-            if [[ -n "$rvm_token" ]] ; then
-
-
+            if [[ -n "$rvm_token" ]]
+            then
               # TODO: Middle should be convertable to a case statement for further
               #       efficiency only have to deal with the first and last parts.
-              if [[ "gemset" = "$rvm_action" ]] ; then
-
+              if [[ "gemset" = "$rvm_action" ]]
+              then
                 case "$rvm_token" in
                   *${rvm_gemset_separator:-"@"}*)
                     rvm_gemset_name="${rvm_token/*${rvm_gemset_separator:-"@"}/}"
@@ -344,7 +394,8 @@ __rvm_parse_args()
 
                   *,*)
                     rvm_ruby_strings="$rvm_token"
-                    if [[ -z "${rvm_action:-""}" ]] ; then
+                    if [[ -z "${rvm_action:-""}" ]]
+                    then
                       rvm_action="ruby" # Not sure if we really want to do this but we'll try it out.
                     fi
                     ;;
@@ -454,7 +505,6 @@ __rvm_parse_args()
 
           -n|--name)
             rvm_ruby_name="$next_token"
-            shift
             if [[ $# -gt 0 ]] ; then next_token="$1" ; shift ; else next_token="" ; fi
             ;;
 
@@ -696,7 +746,8 @@ __rvm_parse_args()
             ;;
 
           --)
-            rvm_ruby_args="$next_token $*" ; rvm_parse_break=1
+            rvm_ruby_args="$next_token $*"
+            rvm_parse_break=1
             ;;
 
           *)
@@ -753,7 +804,7 @@ rvm()
   if [[ -n "${rvm_version:-""}" && "${rvm_version:-""}" != "${disk_version:-""}" \
     && "reload" != "${next_token:-""}" ]] ; then
 
-    printf "\nA RVM version ${disk_version} is installed yet ${rvm_version} is loaded.\n Please do one of the following:\n  * 'rvm reload'\n  * open a new shell\n  * source your shell init scripts\n"
+    printf "\nA RVM version ${disk_version} is installed yet ${rvm_version} is loaded.\n Please do one of the following:\n  * 'rvm reload'\n  * open a new shell\n\n"
 
     return 1
 
@@ -815,6 +866,7 @@ rvm()
       source "$rvm_scripts_path/functions/implode"
       __rvm_implode
       ;;
+
     get)
       if (( $# > 0 ))
       then
@@ -828,12 +880,13 @@ rvm()
       then
         shift
       fi
-      \cp -f "$rvm_scripts_path/get" /tmp/$$
-      "/tmp/$$" $rvm_ruby_args
-      \rm -f /tmp/$$
+      tmpdir=${TMPDIR:-/tmp}
+      \cp -f "$rvm_scripts_path/get" $tmpdir/$$
+      "$tmpdir/$$" $rvm_ruby_args
+      \rm -f $tmpdir/$$
       ;;
 
-    help|rtfm|env|current|info|list|gemdir|gemhome|gempath|monitor|notes|package)
+    help|rtfm|env|current|info|list|gemdir|gemhome|gempath|monitor|notes|package|extract|pkg)
 
       if (( $# > 0 ))
       then
@@ -843,10 +896,11 @@ rvm()
         next_token=""
       fi
 
-      if [[ "$next_token" = "${rvm_action}" ]]
+      if [[ "$next_token" == "${rvm_action}" ]]
       then
         shift
       fi
+
       "$rvm_scripts_path/${rvm_action}" ${rvm_ruby_args:-}
       ;;
 
@@ -860,11 +914,18 @@ rvm()
       ;;
 
     ruby|gem|rake|exec)
-      old_rvm_ruby_string=${rvm_ruby_string:-""}
+      old_rvm_ruby_string=${rvm_ruby_string:-}
       unset rvm_ruby_string
       export rvm_ruby_strings
 
-      "$rvm_scripts_path/set" "$rvm_action" $rvm_ruby_args ; result=$?
+      case $- in
+        (*i*)
+          "$rvm_scripts_path/set" "$rvm_action" $rvm_ruby_args ; result=$?
+          ;;
+        (*)
+          exec "$rvm_scripts_path/set" "$rvm_action" $rvm_ruby_args
+          ;;
+      esac
 
       # Restore the state pre-sets.
       [[ -n "$old_rvm_ruby_string" ]] && rvm_ruby_string=$old_rvm_ruby_string
@@ -911,9 +972,11 @@ rvm()
       rvm_action="rake" ; __rvm_do
       ;;
 
-    fetch|install|uninstall|remove)
-      if [[ -n "$rvm_ruby_strings" ]]; then
-        "$rvm_scripts_path"/manage "$rvm_action" "$rvm_ruby_strings"
+    fetch|install|uninstall|remove|reinstall)
+      export rvm_path
+      if [[ -n "${rvm_ruby_strings}" ]]
+      then
+        "$rvm_scripts_path"/manage "$rvm_action" "${rvm_ruby_strings//*-- }"
       else
         "$rvm_scripts_path"/manage "$rvm_action"
       fi

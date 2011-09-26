@@ -12,8 +12,8 @@
 
 # Source this file so that it will leave you in the Sites directory.
 
-rails_version="3.0.3"
-ruby_version="1.8.7"
+rails_version="3.0.9"
+ruby_version="1.9.1"
 sites_path="$HOME/Sites"
 abort=false
 
@@ -39,7 +39,7 @@ else
       sudo apt-get install build-essential bison openssl libreadline6 libreadline6-dev curl git-core zlib1g zlib1g-dev libssl-dev libyaml-dev libsqlite3-0 libsqlite3-dev sqlite3 libxml2-dev libxslt-dev autoconf libc6-dev
     elif command -v pacman
     then
-      sudo pacman -S --noconfirm gcc patch curl bison zlib readline libxml2 libxslt git autoconf diffutils patch bison make
+      sudo pacman -S --noconfirm gcc patch curl bison zlib readline libxml2 libxslt git autoconf diffutils patch make
     elif command -v yum
     then
       sudo yum install -y gcc-c++ patch readline readline-devel zlib zlib-devel libyaml-devel libffi-devel openssl-devel
